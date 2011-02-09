@@ -1,10 +1,7 @@
 (ns pokerdice.hands
   "Functions for dealing with different hands in pokerdice"
-  (:use clojure.core))
-
-(def +maxface+ 6)
-(def +hand-order+
-  '(five-of-a-kind four-of-a-kind full-house straight three-of-a-kind two-pair pair nothing))
+  (:use clojure.core
+        pokerdice.constants))
 
 (defn histogram [arr]
   "Given an iterable, compute a histogram as a vector"
@@ -42,7 +39,7 @@
 (defn two-pair? [h]
   (= 2 (ath (:histohisto h) 2)))
 (defn pair? [h]
-  (= 1 (ath (:histohisto h) 1)))
+  (= 1 (ath (:histohisto h) 2)))
 (defn nothing? [h]
   true)
 
@@ -50,9 +47,20 @@
   (zipmap +hand-order+
           (map #(resolve (symbol (str (name %1) "?")))
                +hand-order+)))
+(def +hand-beats+
+  (zipmap +hand-order+
+          (map #(set (nthnext +hand-order+ (inc %1)))
+               (range (count +hand-order+)))))
+               
 
 (defn which-hand [h]
-  (let [hi (handinfo h)]
-    (some #(let [f (get +hand-pred+ %1)]
-             (and (f hi) %1))
-          +hand-order+)))
+  (some #(let [f (get +hand-pred+ %1)]
+           (and (f h) %1))
+        +hand-order+))
+
+(defn describe-hand [h]
+  (which-hand (handinfo h)))
+
+(defn beats [hand-type-a hand-type-b]
+  "Determine if hand-type A beats hand-type B"
+  (hand-type-b (get +hand-beats+ hand-type-a)))
